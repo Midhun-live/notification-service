@@ -25,7 +25,8 @@ class NotificationService:
             "notification_id": str(notification.id),
             "user_id": str(notification.user_id),
             "channels": notification.channels,
-            "message": notification.message
+            "message": notification.message,
+            "priority": notification.priority
         }
         enqueue_notification_job(job_data)
         

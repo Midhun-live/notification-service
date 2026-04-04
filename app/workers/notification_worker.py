@@ -8,6 +8,7 @@ from app.models.notifications import Notifications
 
 def process_job(job_data: dict):
     print(f"[*] Processing job: {json.dumps(job_data, indent=2)}")
+    print(f"🔥 Processing {job_data.get('priority')} notification")
     
     # 1. Simulate sending
     channels = job_data.get("channels", [])
@@ -30,7 +31,7 @@ def process_job(job_data: dict):
 
                 # Simulate delivery
                 time.sleep(1)
-                success = False
+                success = random.choice([True, False])
 
                 if success:
                     notification.status = "delivered"
@@ -51,7 +52,9 @@ def process_job(job_data: dict):
 
                     print(f"[*] Delivery failed. Requeueing {notification_id} (Attempt {notification.retry_count}/{notification.max_retries})")
 
-                    redis_client.lpush("notification_queue", json.dumps(job_data))
+                    priority = job_data.get("priority", "normal")
+                    queue_name = f"notification_queue:{priority}"
+                    redis_client.lpush(queue_name, json.dumps(job_data))
 
                     return   # 🔥 CRITICAL (prevents falling to final failure)
 
@@ -67,12 +70,15 @@ def process_job(job_data: dict):
         db.close()
 
 def run_worker():
-    print("[*] Worker started. Waiting for jobs in 'notification_queue'...")
+    print("[*] Worker started. Waiting for jobs... (Priorities: critical, high, normal, low)")
     while True:
         try:
             # BRPOP blocks until a job is available in the queue
             # Returns a tuple: (queue_name, data)
-            result = redis_client.brpop("notification_queue", timeout=0)
+            result = redis_client.brpop(
+                ["notification_queue:critical", "notification_queue:high", "notification_queue:normal", "notification_queue:low"],
+                timeout=0
+            )
             if result:
                 _, job_json = result
                 job_data = json.loads(job_json)
