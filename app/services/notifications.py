@@ -16,19 +16,12 @@ class NotificationService:
         return notification
 
 
-    def create_notification(self, data: NotificationCreate) -> Notifications:
-        from app.core.redis import enqueue_notification_job
-        
+    def create_notification(self, data: NotificationCreate) -> tuple[Notifications, bool]:
+        if data.idempotency_key:
+            existing_notification = self.repo.get_by_idempotency_key(data.idempotency_key)
+            if existing_notification:
+                return existing_notification, False
+
         notification = self.repo.create(data)
-        
-        job_data = {
-            "notification_id": str(notification.id),
-            "user_id": str(notification.user_id),
-            "channels": notification.channels,
-            "message": notification.message,
-            "priority": notification.priority
-        }
-        enqueue_notification_job(job_data)
-        
-        return notification
+        return notification, True
 

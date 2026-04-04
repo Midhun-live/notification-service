@@ -12,8 +12,21 @@ def create_notification(
     request: NotificationCreate,
     db: Session = Depends(get_db)
 ):
+    from app.core.redis import enqueue_notification_job
     service = NotificationService(db)
-    return service.create_notification(request)
+    notification, is_new = service.create_notification(request)
+    
+    if is_new:
+        job_data = {
+            "notification_id": str(notification.id),
+            "user_id": str(notification.user_id),
+            "channels": notification.channels,
+            "message": notification.message,
+            "priority": notification.priority
+        }
+        enqueue_notification_job(job_data)
+        
+    return notification
 
 @router.get("/notifications/{id}", response_model=NotificationResponse)
 def get_notification(
