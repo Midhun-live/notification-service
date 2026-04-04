@@ -12,7 +12,17 @@ def create_notification(
     request: NotificationCreate,
     db: Session = Depends(get_db)
 ):
-    from app.core.redis import enqueue_notification_job
+    from app.core.redis import enqueue_notification_job, redis_client
+    
+    # Rate Limiting
+    rate_limit_key = f"rate_limit:{request.user_id}"
+    current_count = redis_client.incr(rate_limit_key)
+    if current_count == 1:
+        redis_client.expire(rate_limit_key, 3600)
+        
+    if current_count > 100:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
     service = NotificationService(db)
     notification, is_new = service.create_notification(request)
     
