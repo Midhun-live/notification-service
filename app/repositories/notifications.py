@@ -11,6 +11,9 @@ class NotificationRepository:
     def get_by_id(self, notification_id: uuid.UUID) -> Optional[Notifications]:
         return self.db.query(Notifications).filter(Notifications.id == notification_id).first()
 
+    def get_by_idempotency_key(self, idempotency_key: str) -> Optional[Notifications]:
+        return self.db.query(Notifications).filter(Notifications.idempotency_key == idempotency_key).first()
+
 
     def create(self, data: NotificationCreate) -> Notifications:
         data_dict = data.model_dump(exclude_unset=True)

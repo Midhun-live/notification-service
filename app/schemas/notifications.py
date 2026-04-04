@@ -6,7 +6,7 @@ class NotificationCreate(BaseModel):
     user_id: str
     message: str
     channels: List[str]
-    priority: str
+    priority: str = "normal"
     idempotency_key: Optional[str] = None
     batch_id: Optional[uuid.UUID] = None
     metadata: Optional[Dict[str, Any]] = None
