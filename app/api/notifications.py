@@ -19,7 +19,6 @@ def create_notification(
 ):
     from app.core.redis import enqueue_notification_job, redis_client
     
-    # Rate Limiting
     rate_limit_key = f"rate_limit:{request.user_id}"
     current_count = redis_client.incr(rate_limit_key)
     if current_count == 1:

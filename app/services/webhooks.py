@@ -22,15 +22,13 @@ class WebhookService:
 
     @staticmethod
     def send_webhook(url: str, payload: dict):
-        # Fire and forget (non-blocking)
         def _send():
             try:
-                # Use httpx or requests. httpx works well.
                 with httpx.Client(timeout=5.0) as client:
                     response = client.post(url, json=payload)
                     response.raise_for_status()
             except Exception as e:
-                print(f"[!] Webhook delivery failed for {url}: {e}")
+                print(f"Webhook delivery failed for {url}: {e}")
         
         thread = threading.Thread(target=_send, daemon=True)
         thread.start()

@@ -11,7 +11,6 @@ class WebhookRepository:
         return self.db.query(Webhooks).filter(Webhooks.user_id == user_id).first()
 
     def create(self, data: WebhookCreate) -> Webhooks:
-        # Avoid duplicate webhooks for the same user, or just update
         existing = self.get_by_user_id(data.user_id)
         if existing:
             existing.url = str(data.url)

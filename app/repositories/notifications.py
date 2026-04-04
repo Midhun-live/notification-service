@@ -17,9 +17,11 @@ class NotificationRepository:
 
     def create(self, data: NotificationCreate) -> Notifications:
         data_dict = data.model_dump(exclude_unset=True)
-        # Handle the field name mapping from API 'metadata' to DB 'meta_data'
         if "metadata" in data_dict:
             data_dict["meta_data"] = data_dict.pop("metadata")
+            
+        data_dict.pop("template", None)
+        data_dict.pop("variables", None)
             
         db_obj = Notifications(**data_dict)
         self.db.add(db_obj)

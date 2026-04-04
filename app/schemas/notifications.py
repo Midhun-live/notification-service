@@ -4,7 +4,9 @@ import uuid
 
 class NotificationCreate(BaseModel):
     user_id: str
-    message: str
+    message: Optional[str] = None
+    template: Optional[str] = None
+    variables: Optional[Dict[str, Any]] = None
     channels: List[str]
     priority: str = "normal"
     idempotency_key: Optional[str] = None
@@ -24,7 +26,9 @@ class NotificationResponse(BaseModel):
 
 class NotificationBatchCreate(BaseModel):
     user_ids: List[str]
-    message: str
+    message: Optional[str] = None
+    template: Optional[str] = None
+    variables: Optional[Dict[str, Any]] = None
     channels: List[str]
     priority: str = "normal"
     idempotency_key: Optional[str] = None
