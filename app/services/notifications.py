@@ -17,6 +17,13 @@ class NotificationService:
 
 
     def create_notification(self, data: NotificationCreate) -> tuple[Notifications, bool]:
+        from app.services.template_service import TemplateService
+        
+        if data.template:
+            data.message = TemplateService.render(data.template, data.variables)
+        elif not data.message:
+            raise HTTPException(status_code=400, detail="Either message or template must be provided")
+            
         if data.idempotency_key:
             existing_notification = self.repo.get_by_idempotency_key(data.idempotency_key)
             if existing_notification:
@@ -33,7 +40,6 @@ class NotificationService:
         failed = 0
         
         for user_id in data.user_ids:
-            # Check rate limit
             rate_limit_key = f"rate_limit:{user_id}"
             current_count = redis_client.incr(rate_limit_key)
             if current_count == 1:
@@ -47,8 +53,7 @@ class NotificationService:
                 failed += 1
                 continue
                 
-            # To avoid DB unique constraint violation globally on idempotency_key, 
-            # make it unique per user for the batch request
+            # Scope idempotency_key to user for batch requests
             user_idempotency_key = f"{data.idempotency_key}_{user_id}" if data.idempotency_key else None
             
             create_data = NotificationCreate(
@@ -58,7 +63,9 @@ class NotificationService:
                 priority=data.priority,
                 idempotency_key=user_idempotency_key,
                 batch_id=data.batch_id,
-                metadata=data.metadata
+                metadata=data.metadata,
+                template=data.template,
+                variables=data.variables
             )
             
             notification, is_new = self.create_notification(create_data)

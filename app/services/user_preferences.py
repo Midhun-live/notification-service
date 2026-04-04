@@ -15,5 +15,4 @@ class UserPreferencesService:
         return prefs
 
     def upsert_user_preferences(self, user_id: str, request_data: UserPreferencesRequest) -> UserPreferences:
-        # Business logic goes here (if any apart from repository ops)
         return self.repo.upsert(user_id, request_data)
