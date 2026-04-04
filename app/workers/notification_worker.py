@@ -5,6 +5,28 @@ from datetime import datetime, timedelta
 from app.core.redis import redis_client
 from app.core.database import SessionLocal
 from app.models.notifications import Notifications
+from app.models.notifications import Notifications
+
+def _trigger_webhook(db, notification, job_data):
+    try:
+        from app.repositories.webhooks import WebhookRepository
+        repo = WebhookRepository(db)
+        webhook = repo.get_by_user_id(notification.user_id)
+        if webhook:
+            import requests
+            payload = {
+                "notification_id": str(notification.id),
+                "user_id": notification.user_id,
+                "status": notification.status,
+                "message": notification.message,
+                "channels": job_data.get("channels", [])
+            }
+            try:
+                requests.post(webhook.url, json=payload, timeout=5)
+            except Exception as e:
+                print(f"Error sending webhook: {e}")
+    except Exception as e:
+        print(f"Error fetching webhook: {e}")
 
 def process_job(job_data: dict):
     print(f"[*] Processing job: {json.dumps(job_data, indent=2)}")
@@ -37,6 +59,7 @@ def process_job(job_data: dict):
                     notification.status = "delivered"
                     db.commit()
                     print(f"[*] Delivery simulation: DELIVERED for {notification_id}")
+                    _trigger_webhook(db, notification, job_data)
                     return
 
                 # 🔥 FAILURE HANDLING (FIXED)
@@ -62,6 +85,7 @@ def process_job(job_data: dict):
                 notification.status = "failed"
                 db.commit()
                 print(f"[*] Delivery simulation: FAILED permanently for {notification_id}")
+                _trigger_webhook(db, notification, job_data)
             else:
                 print(f"[!] Notification {notification_id} not found in DB")
     except Exception as e:
