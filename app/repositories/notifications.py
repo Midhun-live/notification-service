@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.notifications import Notifications
 from app.schemas.notifications import NotificationCreate
-from typing import Optional
+from typing import Optional, List
 import uuid
 
 class NotificationRepository:
@@ -13,6 +13,9 @@ class NotificationRepository:
 
     def get_by_idempotency_key(self, idempotency_key: str) -> Optional[Notifications]:
         return self.db.query(Notifications).filter(Notifications.idempotency_key == idempotency_key).first()
+
+    def get_by_user_id(self, user_id: str) -> List[Notifications]:
+        return self.db.query(Notifications).filter(Notifications.user_id == user_id).order_by(Notifications.created_at.desc()).all()
 
 
     def create(self, data: NotificationCreate) -> Notifications:

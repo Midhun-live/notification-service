@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import uuid
+from typing import List
 from app.core.database import get_db
 from app.schemas.notifications import (
     NotificationCreate, 
@@ -65,3 +66,11 @@ def get_notification(
         
     service = NotificationService(db)
     return service.get_notification(notification_id)
+
+@router.get("/users/{user_id}/notifications", response_model=List[NotificationResponse])
+def get_user_notifications(
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    service = NotificationService(db)
+    return service.get_user_notifications(user_id)
