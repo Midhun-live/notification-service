@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from app.core.redis import redis_client
 from app.core.database import SessionLocal
 from app.models.notifications import Notifications
-from app.models.notifications import Notifications
+from app.services.channels.factory import get_handler
 
 def _trigger_webhook(db, notification, job_data):
     try:
@@ -32,12 +32,10 @@ def process_job(job_data: dict):
     print(f"[*] Processing job: {json.dumps(job_data, indent=2)}")
     print(f"🔥 Processing {job_data.get('priority')} notification")
     
-    # 1. Simulate sending
+    # 1. Extract job data details for logging/tracking
     channels = job_data.get("channels", [])
     user_id = job_data.get("user_id")
-    print(f"[*] Simulating sending to {channels} for user {user_id}...")
-    time.sleep(1)
-    print("[*] Sent successfully!")
+
 
     # 2. Update DB
     db = SessionLocal()
@@ -51,9 +49,13 @@ def process_job(job_data: dict):
                 db.commit()
                 print(f"[*] Updated status to 'sent' in DB for {notification_id}")
 
-                # Simulate delivery
-                time.sleep(1)
-                success = random.choice([True, False])
+                # Simulate delivery using channel handlers
+                for channel in notification.channels:
+                    handler = get_handler(channel)
+                    if not handler:
+                        continue
+                        
+                    success = handler.send(notification.user_id, notification.message)
 
                 if success:
                     notification.status = "delivered"
