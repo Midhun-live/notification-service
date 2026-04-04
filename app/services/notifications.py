@@ -17,5 +17,17 @@ class NotificationService:
 
 
     def create_notification(self, data: NotificationCreate) -> Notifications:
-        # Business logic goes here (if any apart from repository ops)
-        return self.repo.create(data)
+        from app.core.redis import enqueue_notification_job
+        
+        notification = self.repo.create(data)
+        
+        job_data = {
+            "notification_id": str(notification.id),
+            "user_id": str(notification.user_id),
+            "channels": notification.channels,
+            "message": notification.message
+        }
+        enqueue_notification_job(job_data)
+        
+        return notification
+
