@@ -6,6 +6,14 @@ from app.services.user_preferences import UserPreferencesService
 
 router = APIRouter()
 
+@router.get("/users/{user_id}/preferences", response_model=UserPreferencesResponse)
+def get_preferences(
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    service = UserPreferencesService(db)
+    return service.get_user_preferences(user_id)
+
 @router.post("/users/{user_id}/preferences", response_model=UserPreferencesResponse)
 def upsert_preferences(
     user_id: str,
