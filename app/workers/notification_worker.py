@@ -1,6 +1,7 @@
 import json
 import time
 import random
+from datetime import datetime, timedelta
 from app.core.redis import redis_client
 from app.core.database import SessionLocal
 from app.models.notifications import Notifications
@@ -26,13 +27,38 @@ def process_job(job_data: dict):
                 notification.status = "sent"
                 db.commit()
                 print(f"[*] Updated status to 'sent' in DB for {notification_id}")
-                
-                # Simulate delivery success/failure
-                time.sleep(1) # simulate brief delivery time
-                success = random.choice([True, False])
-                notification.status = "delivered" if success else "failed"
+
+                # Simulate delivery
+                time.sleep(1)
+                success = False
+
+                if success:
+                    notification.status = "delivered"
+                    db.commit()
+                    print(f"[*] Delivery simulation: DELIVERED for {notification_id}")
+                    return
+
+                # 🔥 FAILURE HANDLING (FIXED)
+
+                # ALWAYS enter retry path first
+                if notification.retry_count < notification.max_retries:
+                    notification.retry_count += 1
+
+                    delay = 2 ** notification.retry_count
+                    notification.next_retry_at = datetime.utcnow() + timedelta(seconds=delay)
+
+                    db.commit()
+
+                    print(f"[*] Delivery failed. Requeueing {notification_id} (Attempt {notification.retry_count}/{notification.max_retries})")
+
+                    redis_client.lpush("notification_queue", json.dumps(job_data))
+
+                    return   # 🔥 CRITICAL (prevents falling to final failure)
+
+                # 🔥 ONLY here we mark final failure
+                notification.status = "failed"
                 db.commit()
-                print(f"[*] Delivery simulation: {notification.status.upper()} for {notification_id}")
+                print(f"[*] Delivery simulation: FAILED permanently for {notification_id}")
             else:
                 print(f"[!] Notification {notification_id} not found in DB")
     except Exception as e:
