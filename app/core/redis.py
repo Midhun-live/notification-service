@@ -13,5 +13,8 @@ def enqueue_notification_job(data: dict):
         else:
             dict_data[k] = v
             
+    priority = dict_data.get("priority", "normal")
+    queue_name = f"notification_queue:{priority}"
+
     json_data = json.dumps(dict_data)
-    redis_client.lpush("notification_queue", json_data)
+    redis_client.lpush(queue_name, json_data)
