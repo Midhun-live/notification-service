@@ -4,6 +4,7 @@ from app.repositories.notifications import NotificationRepository
 from app.schemas.notifications import NotificationCreate
 from app.models.notifications import Notifications
 import uuid
+from typing import List
 
 class NotificationService:
     def __init__(self, db: Session):
@@ -14,6 +15,9 @@ class NotificationService:
         if not notification:
             raise HTTPException(status_code=404, detail="Notification not found")
         return notification
+
+    def get_user_notifications(self, user_id: str) -> List[Notifications]:
+        return self.repo.get_by_user_id(user_id)
 
 
     def create_notification(self, data: NotificationCreate) -> tuple[Notifications, bool]:
