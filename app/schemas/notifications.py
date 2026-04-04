@@ -21,3 +21,23 @@ class NotificationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class NotificationBatchCreate(BaseModel):
+    user_ids: List[str]
+    message: str
+    channels: List[str]
+    priority: str = "normal"
+    idempotency_key: Optional[str] = None
+    batch_id: Optional[uuid.UUID] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+class BatchNotificationDetail(BaseModel):
+    user_id: str
+    status: str
+    notification_id: Optional[uuid.UUID] = None
+
+class NotificationBatchResponse(BaseModel):
+    total: int
+    success: int
+    failed: int
+    details: List[BatchNotificationDetail]

@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import uuid
 from app.core.database import get_db
-from app.schemas.notifications import NotificationCreate, NotificationResponse
+from app.schemas.notifications import (
+    NotificationCreate, 
+    NotificationResponse, 
+    NotificationBatchCreate, 
+    NotificationBatchResponse
+)
 from app.services.notifications import NotificationService
 
 router = APIRouter()
@@ -37,6 +42,17 @@ def create_notification(
         enqueue_notification_job(job_data)
         
     return notification
+
+@router.post("/notifications/batch", response_model=NotificationBatchResponse)
+def create_batch_notifications(
+    request: NotificationBatchCreate,
+    db: Session = Depends(get_db)
+):
+    if not request.user_ids:
+        raise HTTPException(status_code=400, detail="Empty user list")
+        
+    service = NotificationService(db)
+    return service.create_batch_notifications(request)
 
 @router.get("/notifications/{id}", response_model=NotificationResponse)
 def get_notification(
